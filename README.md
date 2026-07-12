@@ -1,63 +1,114 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=rect&height=170&color=0:03120F,45:10B981,100:22C55E&text=%20TCS%20Tools%20&fontColor=ffffff&fontAlignY=35&fontSize=32&textBg=true&desc=Small%20helpers%20and%20utility%20tools%20for%20The%20Canadian%20Space&descAlignY=57&descSize=18" />
+  <img src="https://capsule-render.vercel.app/api?type=rect&height=170&color=0:03120F,45:10B981,100:22C55E&text=%20TCS%20Tools%20&fontColor=ffffff&fontAlignY=35&fontSize=32&textBg=true&desc=Utility%20tools%20for%20The%20Canadian%20Space&descAlignY=57&descSize=18" />
 </p>
 
 > **"Small tools, fewer headaches, better automation."**
 
-A collection of utility tools and helper scripts for **The Canadian Space** projects. These are the practical little sidekicks that keep the bigger automation and publishing systems from turning into a pile of avoidable annoyance.
+## What's Here
 
-## 🚀 Quick Start
+A collection of utility tools built to support The Canadian Space operations. These are production-ready helpers that run as part of our publishing and research pipeline.
 
-1. Open the tool folder you need
-2. Read its local README or usage notes
-3. Run the helper, script, or search utility for the specific job at hand
+## Current Status
 
-## ✨ What lives here
+**Stable and in use**. Tools here have real responsibilities in the TCS ecosystem. Each tool is documented in its own directory.
 
-- 🔍 **Search Tools** (finding things in the chaos)
-- 🛠️ **Utility Scripts** (making life easier)
-- 📊 **Data Helpers** (wrangling information)
-- ⚙️ **Configuration Tools** (setting things up)
+## Tools
 
-## Tools Collection
+### article-scraper
 
-### Agency Search
-Python tool for searching and analyzing aerospace agencies.
-- Search by name, country, or capabilities
-- JSON data management
+**Status**: Production  
+**Language**: Python  
+**Purpose**: Extracts article content from news sources for analysis and processing
+
+The article-scraper reads web pages (news sites, RSS feeds, etc.) and extracts structured article data: title, body, authors, publication date, featured image. Built to handle real-world messy HTML and common edge cases.
+
+**What it extracts**:
+- Full article text with formatting preserved
+- Publication date and author information
+- Featured/header image URL
+- Source URL and metadata
+- Structured output as JSON
+
+**Built for these sources** (reference implementation):
+- Crawl4AI-compatible sources (JavaScript-heavy sites, Cloudflare-protected)
+- Standard HTTP + RSS feeds
+- Custom extraction patterns for publisher quirks
+
+**Recent improvements** (as of 2026-06-20):
+- Hardened HTML parsing (unclosed tags, malformed content)
+- Image URL rewriting for CDN compatibility
+- Better handling of content wrapped in multiple div layers
+- Improved filtering for non-article content (ads, navigation, etc.)
+
+**Usage example**:
+
+```python
+from article_scraper import ArticleScraper
+
+scraper = ArticleScraper()
+article = scraper.fetch("https://example.com/article")
+
+# Returns structured article object with:
+# - title, body, author, published_date, featured_image, source_url
+```
+
+**Where it's used**: Part of the n8n publishing pipeline to gather source material for blog posts
+
+### agency-search
+
+**Status**: In development  
+**Language**: Python  
+**Purpose**: Search and analyse aerospace agencies and organisations
+
+Query aerospace agencies by name, country, capabilities, and other attributes. Useful for researching actors in the space industry.
+
+**Features** (planned):
+- Name and country-based search
+- Capability filtering
+- Organisation metadata
+- JSON data export
 - API-ready structure
-
-**Coming Soon:**
-- More automation utilities
-- Data transformation tools
-- API integration helpers
-- Whatever else needs building
 
 ## Philosophy
 
 > "The right tool for the right job at the right time."
 
 We believe in:
-- ✅ Single-purpose tools (do one thing well)
-- ✅ Reusable components (write once, use everywhere)
-- ✅ Clear documentation (future you will thank you)
-- ✅ Simple before clever (but clever when needed)
+- ✅ **Single purpose**: Do one thing well, no bloat
+- ✅ **Reusable**: Write once, use everywhere (scripts, n8n, CI/CD)
+- ✅ **Documented**: README with examples in every tool directory
+- ✅ **Tested**: Works as advertised, fails gracefully
+- ✅ **Simple before clever**: But clever when the job demands it
 
-## Usage
+## Structure
 
-Browse the folders, each tool has its own README with:
-- Purpose and use cases
-- Installation instructions
-- Usage examples
-- Configuration options
+```
+tcs-tools/
+├── article-scraper/       # Extract article content from web sources
+│   ├── README.md         # Detailed usage and examples
+│   ├── scraper.py        # Main implementation
+│   └── requirements.txt   # Python dependencies
+├── agency-search/         # Search aerospace organisations
+│   ├── README.md
+│   └── search.py
+└── README.md             # This file
+```
 
-## Contributing
+## Contributing a New Tool
 
-Got a tool that could help? Add it here! Keep it:
-- **Focused**: One clear purpose
-- **Documented**: README with examples
-- **Tested**: Works as advertised
-- **Clean**: Follows the philosophy
+Got something that would help? Add it:
+
+1. **Create a directory** with a clear, descriptive name (e.g., `cost-calculator`)
+2. **Write a README** in that directory (purpose, usage examples, dependencies)
+3. **Keep it focused**: One clear job, no feature creep
+4. **Document it well**: Future you will thank you
+5. **Test it**: Make sure it actually works before committing
+
+## Related
+
+- **Main site**: [thecanadian.space](https://thecanadian.space)
+- **tcs-workflows**: The n8n automation that uses these tools
+- **TCS org**: See the organisation wiki for broader context
 
 ---
 
