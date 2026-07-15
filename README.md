@@ -1,5 +1,11 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=rect&height=170&color=0:03120F,45:10B981,100:22C55E&text=%20TCS%20Tools%20&fontColor=ffffff&fontAlignY=35&fontSize=32&textBg=true&desc=Utility%20tools%20for%20The%20Canadian%20Space&descAlignY=57&descSize=18" />
+  <img src="https://capsule-render.vercel.app/api?type=rect&height=200&color=0:03120F,45:10B981,100:22C55E&text=%20TCS%20Tools%20&fontColor=ffffff&fontAlignY=42&fontSize=30&textBg=true&desc=Utility%20tools%20for%20The%20Canadian%20Space&descAlignY=68&descSize=17" />
+</p>
+
+<p align="center">
+  <a href="https://thecanadian.space"><img src="https://img.shields.io/badge/The%20Canadian%20Space-space%20blog-0EA5E9?style=for-the-badge&logo=rocket&logoColor=white" alt="TCS" /></a>
+  <a href="https://github.com/The-Canadian-Space/tcs-tools/issues/new"><img src="https://img.shields.io/badge/Report%20a%20bug-red?style=for-the-badge&logo=github&logoColor=white" alt="Report a bug" /></a>
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
 </p>
 
 > **"Small tools, fewer headaches, better automation."**
@@ -104,11 +110,23 @@ Got something that would help? Add it:
 4. **Document it well**: Future you will thank you
 5. **Test it**: Make sure it actually works before committing
 
-## Related
+## 🐛 Found a bug?
 
-- **Main site**: [thecanadian.space](https://thecanadian.space)
-- **tcs-workflows**: The n8n automation that uses these tools
-- **TCS org**: See the organisation wiki for broader context
+- **[Open an issue](https://github.com/The-Canadian-Space/tcs-tools/issues/new)** — reproducible bugs, feature requests, or ideas
+- If you're seeing it in production (a live TCS blog post using this tool), mention which workflow triggered it
+
+## 🔗 Related
+
+- **Main site:** [thecanadian.space](https://thecanadian.space)
+- **Public wiki:** [wiki.thecanadian.space](https://wiki.thecanadian.space)
+- **[`tcs-scripts`](https://github.com/The-Canadian-Space/tcs-scripts)** — the n8n code nodes that call these tools
+- **[`tcs-workflows`](https://github.com/The-Canadian-Space/tcs-workflows)** *(private)* — backups of the n8n workflows themselves
+
+## 🧡 Support
+
+TCS is a personal project + portfolio piece. If you like what we're building, **Patreon** is where the running project log lives — behind-the-scenes notes, dev diaries, cost breakdowns.
+
+[![Support on Patreon](https://raw.githubusercontent.com/Godimas101/personal-projects/main/patreon/images/buttons/patreon-medium.png)](https://patreon.com/Godimas101)
 
 ---
 
