@@ -25,6 +25,14 @@ Ground truth for scraper behavior is here, not in n8n Code nodes. Code nodes cal
 - **Dynamic-JS content** — route through Browserless (`browserless.io`) not plain HTTP.
 - **Paywall detection** — heuristic-based; false positives happen. Log them; don't crash.
 
+## How to verify (before flagging In QA or closing)
+
+- **Run it locally.** Whether it's a Python utility or an n8n code node — execute against real (or realistic) input, eyeball the output.
+- **For n8n code nodes:** dry-run the node in the n8n Editor with sample input. Check for missing `pairedItem`, wrong data structure, or silent errors that don't propagate.
+- **Check the cost side.** If the tool calls an LLM API, note the tokens spent on the test run. Extreme spikes need a comment before closing.
+- **Read the log/output for warnings** even when it "worked" — silent warnings often become bugs later.
+- **Reversibility.** If the tool writes to WordPress / GitHub / social media, verify you can undo (or that you're running against dev, not prod).
+
 ## Related docs
 
 - [Docs site](https://the-canadian-space.github.io/tcs-docs/)
