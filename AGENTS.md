@@ -35,5 +35,5 @@ Ground truth for scraper behavior is here, not in n8n Code nodes. Code nodes cal
 
 ## Related docs
 
-- [Docs site](https://the-canadian-space.github.io/tcs-docs/)
+- [Docs site](https://docs.thecanadian.space/)
 - Top-level [AGENTS.md](../AGENTS.md) for env access
