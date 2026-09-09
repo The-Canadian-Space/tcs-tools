@@ -141,7 +141,11 @@ SITE_CONFIG = {
     },
     "stokespace.com": {
         "source": "Stoked Space",
-        "selector": "div.post__content-entry",
+        # 2026-09-09: Stoke redesigned WordPress -> Next.js. Old selector
+        # was `div.post__content-entry`; new article body wrapper is
+        # `div.news-rich-text` (also carries `px-main grid-main` utility
+        # classes on the new site).
+        "selector": "div.news-rich-text",
     },
     "fireflyspace.com": {
         "source": "Firefly Aerospace",
