@@ -147,6 +147,15 @@ SITE_CONFIG = {
         # classes on the new site).
         "selector": "div.news-rich-text",
     },
+    "spectrum.ieee.org": {
+        "source": "IEEE Spectrum",
+        # 2026-09-10: Canada Rocket Company's news room republishes IEEE
+        # Spectrum content (via news_index). Spectrum runs on Rebelmouse;
+        # the article body is inside a single unique `<div class="body-description">`
+        # wrapper (nested deep inside .widget__body). Verified against
+        # https://spectrum.ieee.org/canadian-rockets.
+        "selector": "div.body-description",
+    },
     "fireflyspace.com": {
         "source": "Firefly Aerospace",
         "selector": "div.entry-content",
