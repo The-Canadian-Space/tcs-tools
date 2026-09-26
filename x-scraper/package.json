@@ -5,6 +5,6 @@
   "type": "module",
   "description": "TCS X (Twitter) scraper via Rettiwt-API. Replaces twitterapi.io.",
   "dependencies": {
-    "rettiwt-api": "^7.1.2"
+    "rettiwt-api": "^7.1.4"
   }
 }
