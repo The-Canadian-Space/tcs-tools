@@ -354,12 +354,31 @@ async function main() {
 
   // Burned-account / soft-ban detection.
   // Hard signal: any feed got 401/403 -> apiKey is dead.
-  // Soft signal: 3+ feeds errored after retries -> something is wrong upstream.
+  // Soft signal: half or more of the feeds errored after retries.
+  //
+  // tcs-workflows#104 — this used to be `errCount >= 3`, an absolute count
+  // written when the feed list was ~10 accounts, where "3 of 10 failed" is a
+  // real signal. That assumption stopped holding as lists shrank (tcs-docs#14
+  // trimmed NASA 10 -> 7) and broke outright for the single-feed NASAAdmin
+  // pipe (tcs-docs#11): Daily Broadcast runs ONE feed, so `>= 3` was
+  // unreachable and on 2026-09-26 this reported suspected_auth_issue:false
+  // while 100% of feeds were failing. The whole point of the flag is to fire
+  // in exactly that situation.
+  //
+  // A ratio holds at any list size: 1/1, 2/3 and 5/10 all trip; 1/10 does not.
+  // The `errCount >= 1` floor is what stops a zero-feed run (0/0 -> ratio 0,
+  // but be explicit) from being read as a failure.
   const authFailed = results.some(r =>
     typeof r.error === 'string' && /401|403|unauthorized|forbidden/i.test(r.error)
   );
   const errCount = results.filter(r => r.error).length;
-  const suspectedAuthIssue = !authFailed && errCount >= 3;
+  const errRatio = results.length > 0 ? errCount / results.length : 0;
+  // OR, not replace: the ratio adds coverage for short lists, it must not
+  // REMOVE coverage for long ones. 3-of-10 tripped the original rule and
+  // still should; a pure ratio would have quietly desensitised big lists
+  // while fixing small ones.
+  const suspectedAuthIssue =
+    !authFailed && (errCount >= 3 || (errCount >= 1 && errRatio >= 0.5));
 
   const out = {
     run_id: cfg.run_id || null,
@@ -368,6 +387,9 @@ async function main() {
     auth_failed: authFailed,
     suspected_auth_issue: suspectedAuthIssue,
     error_count: errCount,
+    // tcs-workflows#105: downstream reports "N/M feeds errored" rather than
+    // asserting a cause it cannot know. Additive - nothing reads it yet.
+    error_ratio: Number(errRatio.toFixed(3)),
     feeds: results,
     index: null,
   };
