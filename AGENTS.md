@@ -6,10 +6,11 @@
 
 ## What lives here
 
-- **`article_scraper/`** — The canonical article-scraper implementation. Called via SSH from n8n workflows. Extracts article text from source URLs, handles paywall detection, JavaScript fallbacks, and cleanup.
-- **`agency_search/`** — Agency + entity lookup helpers.
+- **`article-scraper/`** — The public mirror of the article scraper and its tests. Its source is tcs-workflows `working-files/python-scripts/`, and the VPS runs the same file; see `article-scraper/README.md`. Called via SSH from n8n workflows. Extracts article text from source URLs, handles per-site selectors, JavaScript fallbacks, and cleanup.
+- **`x-scraper/`** — The X scraper (rettiwt-api), mirrored from the VPS.
+- **`agency-search/`** — Agency + entity lookup helpers.
 
-Ground truth for scraper behavior is here, not in n8n Code nodes. Code nodes call these via SSH.
+Scraper behaviour lives in these scripts, not in n8n Code nodes. Code nodes call them via SSH.
 
 ## Working principles
 
@@ -17,7 +18,7 @@ TCS-wide practices (test-before-commit, docs-in-same-PR) live in the parent — 
 
 1. **Read the current implementation before editing.** Scrapers have accumulated edge cases (Cloudflare-blocked sources like Space Daily, dynamic-JS content requiring browserless, per-source hostname routing). Don't remove a case just because it looks odd — read the commit that added it.
 2. **Preserve return shape.** The scraper's output structure is consumed by n8n Code nodes. Adding fields is safe; renaming/removing them breaks callers silently.
-3. **Test with a live URL.** `python article_scraper/main.py <url>` from your local machine works for HTTP paths; SSH-only paths need to run on the VPS.
+3. **Test with the suites, then a live page.** Run `article-scraper/test_article_scraper_*.py` (Crawl4AI is stubbed). Live pages need Crawl4AI's browser, so stage the script on the VPS from a scratch folder.
 4. **Update the audit results.** Every article-scraper change should be validated against the source-coverage matrix — the overnight audit at `[project_tcs_scraper_overnight_fixes]` memory documents the source-quality tiers.
 
 ## Common failure modes
