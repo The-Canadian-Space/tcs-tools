@@ -93,6 +93,12 @@ covering the 26 domains we currently ingest from. Each entry can specify:
 - `keep_overlays` — disable Crawl4AI's overlay-removal step (breaks Ars, ESA,
   NASA Science, etc. that wrap article images in `<figure>` or `<a>` elements
   the overlay filter classifies as UI)
+- `plain_fetch` — fetch the page once with a plain GET (curl, the browser's
+  user agent), then load that HTML into the browser (Crawl4AI's `raw:` with
+  `process_in_browser` and `base_url`), so the selector and extractors run as
+  on a live page. For a site that challenges the headless browser but not a
+  plain request (Aerospace America, from 2026-11-25). If the plain fetch fails,
+  the browser fetches the page as before.
 
 Sites currently configured: Ars Technica, ESA, European Spaceflight,
 NASASpaceflight, Spaceflight Now, SpacePolicyOnline, SpaceNews, Space Daily,
