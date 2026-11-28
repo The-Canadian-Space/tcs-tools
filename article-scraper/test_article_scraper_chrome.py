@@ -57,13 +57,14 @@ def _scrape(url, res, title='T'):
     async def fake_fetch(crawler, u, cfg):
         return res, None, 1
 
-    saved = A._fetch_with_retry
+    saved = A._fetch_with_retry, A._plain_get
     A._fetch_with_retry = fake_fetch
+    A._plain_get = lambda u: ('', 'no network in tests')   # #317: a plain_fetch site takes the browser path here
     try:
         with contextlib.redirect_stderr(io.StringIO()):
             return asyncio.run(A.scrape_one(None, {'url': url, 'title': title}))
     finally:
-        A._fetch_with_retry = saved
+        A._fetch_with_retry, A._plain_get = saved
 
 
 class SpaceQTests(unittest.TestCase):

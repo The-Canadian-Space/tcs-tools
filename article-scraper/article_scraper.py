@@ -49,6 +49,7 @@ import contextlib
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 
@@ -118,6 +119,51 @@ def _is_retryable(err_msg: str) -> bool:
 # every other site, still fails fast (#61).
 CHALLENGE_RETRY_HOSTS = ("nasaspaceflight.com",)
 CHALLENGE_RETRY_PAUSE_S = 10
+
+# The browser's user agent; the plain fetch below sends the same one.
+BROWSER_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/131.0.0.0 Safari/537.36"
+)
+
+# AA_PLAIN_FETCH_V1 (tcs-workflows#317): from 2026-11-25 Aerospace America answers the headless browser with a Cloudflare
+# JS challenge, while one plain GET with the same full Chrome user agent from the same VPS gets the whole article (HTTP
+# 200, 139 KB, 2026-11-27). A site with "plain_fetch" is fetched once that way, and its HTML is loaded into the browser
+# (raw: with process_in_browser, base_url = the page), so its selector and every extractor run as on a live page. If the
+# plain fetch fails (an error, not 200, a challenge or near-empty page), the site is fetched by the browser as before.
+# curl, not urllib: curl's request is the one measured. It's on the VPS (/usr/bin/curl).
+PLAIN_FETCH_TIMEOUT_S = 20
+PLAIN_FETCH_MAX_BYTES = 5_000_000
+PLAIN_FETCH_MIN_CHARS = 2_000
+_CHALLENGE_MARKERS = ("cf_chl_opt", "<title>just a moment")
+
+
+def _plain_get(url: str):
+    """One plain GET with BROWSER_UA. Returns (html, "") or ("", reason). Never raises."""
+    cmd = ["curl", "-sS", "--compressed", "-L", "--max-redirs", "3",
+           "--max-time", str(PLAIN_FETCH_TIMEOUT_S), "--max-filesize", str(PLAIN_FETCH_MAX_BYTES),
+           "-A", BROWSER_UA,
+           "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+           "-H", "Accept-Language: en-US,en;q=0.9",
+           "-w", "\n%{http_code}", "--", url]
+    try:
+        p = subprocess.run(cmd, capture_output=True, timeout=PLAIN_FETCH_TIMEOUT_S + 5)
+    except Exception as e:
+        return "", f"plain fetch: {type(e).__name__}: {e}"
+    if p.returncode != 0:
+        return "", f"plain fetch: curl exit {p.returncode}: {p.stderr.decode('utf-8', 'replace').strip()[:200]}"
+    body, _, code = p.stdout.rpartition(b"\n")
+    code = code.decode("ascii", "replace").strip()
+    if code != "200":
+        return "", f"plain fetch: HTTP {code}"
+    html = body.decode("utf-8", errors="replace")
+    low = html.lower()
+    if any(m in low for m in _CHALLENGE_MARKERS):
+        return "", "plain fetch: a challenge page"
+    if len(html) < PLAIN_FETCH_MIN_CHARS:
+        return "", f"plain fetch: only {len(html)} characters"
+    return html, ""
 
 
 def _is_challenge_retryable(url: str, err_msg: str) -> bool:
@@ -366,6 +412,8 @@ SITE_CONFIG = {
         # AA_TITLE_META_V1 (tcs-workflows#299): the headline's <h1> is outside the body, and STRICT_SCOPE_HEAD_META
         # leaves og:title out, so a caller that passes no title got none. og:title is selected for this site alone.
         "title_meta": True,
+        # AA_PLAIN_FETCH_V1 (tcs-workflows#317): the headless browser gets a Cloudflare JS challenge from 2026-11-25.
+        "plain_fetch": True,
     },
 }
 
@@ -430,8 +478,8 @@ STRICT_SCOPE_HEAD_META = ("meta[property='og:image'], meta[name='twitter:image']
 STRICT_SCOPE_TITLE_META = "meta[property='og:title']"
 
 
-def run_config_for(url: str) -> CrawlerRunConfig:
-    """Return a CrawlerRunConfig tuned for the given URL's quirks."""
+def run_config_for(url: str, **extra) -> CrawlerRunConfig:
+    """Return a CrawlerRunConfig tuned for the given URL's quirks (plus any extra settings, e.g. for raw: HTML)."""
     site = config_for(url)
     kwargs = dict(
         cache_mode=CacheMode.BYPASS,
@@ -463,6 +511,7 @@ def run_config_for(url: str) -> CrawlerRunConfig:
         kwargs["page_timeout"] = 60_000
     if site.get("wait"):
         kwargs["delay_before_return_html"] = site["wait"]
+    kwargs.update(extra)
     return CrawlerRunConfig(**kwargs)
 
 
@@ -1279,17 +1328,19 @@ async def _fetch_with_retry(
     attempts_made = 0
     res = None
     err = None
+    # For raw: HTML (AA_PLAIN_FETCH_V1), the logs and the challenge rule use the page's URL, not the HTML.
+    page_url = (getattr(cfg, "base_url", None) or "raw:") if url.startswith("raw:") else url
     for attempt in range(1, max_attempts + 1):
         attempts_made = attempt
         res, err = await _fetch(crawler, url, cfg)
         if err is None:
             return res, None, attempts_made
-        challenge = _is_challenge_retryable(url, err)
+        challenge = _is_challenge_retryable(page_url, err)
         if attempt < max_attempts and (_is_retryable(err) or res is None or challenge):
             backoff = CHALLENGE_RETRY_PAUSE_S if challenge else attempt
             _log_event({
                 "event": "scrape_retry",
-                "url": url,
+                "url": page_url,
                 "attempt": attempt,
                 "max_attempts": max_attempts,
                 "error": err,
@@ -1943,9 +1994,19 @@ async def scrape_one(crawler: AsyncWebCrawler, article: dict) -> dict:
 
     cfg = run_config_for(url)
 
+    # AA_PLAIN_FETCH_V1 (tcs-workflows#317): one plain GET, then both passes below run on its HTML in the browser.
+    fetch_url, raw_kwargs = url, {}
+    if site.get("plain_fetch"):
+        page, why = await asyncio.to_thread(_plain_get, url)
+        if page:
+            fetch_url, raw_kwargs = "raw:" + page, {"process_in_browser": True, "base_url": url}
+            cfg = run_config_for(url, **raw_kwargs)
+        else:
+            _log_event({"event": "plain_fetch_fail", "url": url, "error": why})
+
     # First attempt — with per-site targeting. _fetch_with_retry handles the
     # transient-failure retry (1s, 2s backoff) that used to live inline here.
-    res, err, attempts = await _fetch_with_retry(crawler, url, cfg)
+    res, err, attempts = await _fetch_with_retry(crawler, fetch_url, cfg)
     if err:
         # Log the primary-phase failure whether the crawler raised (res is
         # None) or handed back a failed result object (res.success False —
@@ -1989,8 +2050,9 @@ async def scrape_one(crawler: AsyncWebCrawler, article: dict) -> dict:
             fallback_kwargs["page_timeout"] = 60_000
         if site.get("wait"):
             fallback_kwargs["delay_before_return_html"] = site["wait"]
+        fallback_kwargs.update(raw_kwargs)
         fallback_cfg = CrawlerRunConfig(**fallback_kwargs)
-        res2, err2, attempts2 = await _fetch_with_retry(crawler, url, fallback_cfg)
+        res2, err2, attempts2 = await _fetch_with_retry(crawler, fetch_url, fallback_cfg)
         if res2 and getattr(res2, "success", False):
             if not html:
                 html = getattr(res2, "html", "") or ""
@@ -2159,11 +2221,7 @@ async def scrape_all(articles: list) -> list:
     browser_cfg = BrowserConfig(
         headless=True,
         verbose=False,
-        user_agent=(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/131.0.0.0 Safari/537.36"
-        ),
+        user_agent=BROWSER_UA,
     )
 
     # Crawl4AI's logger writes to stdout. Redirect during scrape. The redirect
